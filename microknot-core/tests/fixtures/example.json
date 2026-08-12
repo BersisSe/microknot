@@ -1,0 +1,29 @@
+{
+  "id": "wf_example",
+  "name": "Example",
+  "knots": [
+    {
+      "id": "n1",
+      "name": "Every 5 minutes",
+      "type": "trigger.schedule",
+      "params": { "cron": "*/5 * * * *" }
+    },
+    {
+      "id": "n2",
+      "name": "GET status",
+      "type": "http.request",
+      "params": { "method": "GET", "url": "https://api.example.com/status" }
+    },
+    {
+      "id": "n3",
+      "name": "Log",
+      "type": "notify.log",
+      "params": { "message": "status fetched" }
+    }
+  ],
+  "connections": [
+    { "from": "n1", "fromOutput": 0, "to": "n2", "toInput": 0 },
+    { "from": "n2", "fromOutput": 0, "to": "n3", "toInput": 0 }
+  ],
+  "active": false
+}
