@@ -5,9 +5,7 @@ use crate::item::Item;
 pub fn render_param(value: &Value, item: &Item) -> Value {
     match value {
         Value::String(s) => render_string_value(s, item),
-        Value::Array(items) => {
-            Value::Array(items.iter().map(|v| render_param(v, item)).collect())
-        }
+        Value::Array(items) => Value::Array(items.iter().map(|v| render_param(v, item)).collect()),
         Value::Object(map) => {
             let mut out = serde_json::Map::new();
             for (k, v) in map {

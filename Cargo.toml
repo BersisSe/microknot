@@ -1,3 +1,10 @@
 [workspace]
 resolver = "3"
 members = ["microknot-core", "microknot-server"]
+
+[workspace.lints.clippy]
+correctness = { level = "deny", priority = -1 }
+perf = { level = "deny", priority = -1 }
+suspicious = { level = "deny", priority = -1 }
+style = { level = "warn", priority = -1 }
+complexity = { level = "warn", priority = -1 }

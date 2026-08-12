@@ -17,8 +17,7 @@ pub const DESCRIPTOR: KnotDescriptor = KnotDescriptor {
 pub fn schema() -> KnotSchema {
     vec![ParamField::list("assignments", "Assignments").rows(vec![
         ListRowField::text("field", "Field").placeholder("user.name"),
-        ListRowField::jsonish("value", "Value")
-            .placeholder("value or {{ $json.field }}"),
+        ListRowField::jsonish("value", "Value").placeholder("value or {{ $json.field }}"),
     ])]
 }
 
@@ -92,8 +91,13 @@ mod tests {
             { "field": "meta.count", "value": "{{ $json.n }}" }
         ] }));
         let items = vec![Item::new(json!({ "user": "ada", "n": 5 }))];
-        let ctx = Ctx { workflow_id: "w".into() };
+        let ctx = Ctx {
+            workflow_id: "w".into(),
+        };
         let out = knot.run(&ctx, items).unwrap();
-        assert_eq!(out[0][0].json, json!({ "user": "ada", "n": 5, "title": "Hello ada", "meta": { "count": 5 } }));
+        assert_eq!(
+            out[0][0].json,
+            json!({ "user": "ada", "n": 5, "title": "Hello ada", "meta": { "count": 5 } })
+        );
     }
 }

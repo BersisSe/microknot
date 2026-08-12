@@ -1,4 +1,4 @@
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use crate::error::{Error, Result};
 use crate::item::Item;
@@ -17,7 +17,10 @@ pub const DESCRIPTOR: KnotDescriptor = KnotDescriptor {
 pub fn schema() -> KnotSchema {
     let methods: Vec<FieldOption> = ["GET", "POST", "PUT", "PATCH", "DELETE"]
         .iter()
-        .map(|m| FieldOption { value: m.to_string(), label: m.to_string() })
+        .map(|m| FieldOption {
+            value: m.to_string(),
+            label: m.to_string(),
+        })
         .collect();
 
     vec![
@@ -36,8 +39,16 @@ pub fn schema() -> KnotSchema {
 }
 
 pub fn factory(params: &Value) -> Box<dyn Knot> {
-    let method = params.get("method").and_then(Value::as_str).unwrap_or("GET").to_string();
-    let url = params.get("url").and_then(Value::as_str).unwrap_or_default().to_string();
+    let method = params
+        .get("method")
+        .and_then(Value::as_str)
+        .unwrap_or("GET")
+        .to_string();
+    let url = params
+        .get("url")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .to_string();
     let headers: Vec<(String, String)> = params
         .get("headers")
         .and_then(Value::as_object)
@@ -52,7 +63,13 @@ pub fn factory(params: &Value) -> Box<dyn Knot> {
         .http_status_as_error(false)
         .build()
         .new_agent();
-    Box::new(HttpRequest { method, url, headers, body, agent })
+    Box::new(HttpRequest {
+        method,
+        url,
+        headers,
+        body,
+        agent,
+    })
 }
 
 pub struct HttpRequest {
@@ -79,9 +96,7 @@ impl Knot for HttpRequest {
             for (k, v) in &self.headers {
                 builder = builder.header(k, templ::render_string(v, &item));
             }
-            let request = builder
-                .body(body)
-                .map_err(|e| Error::Knot(e.to_string()))?;
+            let request = builder.body(body).map_err(|e| Error::Knot(e.to_string()))?;
             let response = self
                 .agent
                 .run(request)
@@ -102,8 +117,8 @@ impl Knot for HttpRequest {
                 .into_body()
                 .read_to_string()
                 .map_err(|e| Error::Knot(e.to_string()))?;
-            let parsed_body = serde_json::from_str::<Value>(&body_text)
-                .unwrap_or(Value::String(body_text));
+            let parsed_body =
+                serde_json::from_str::<Value>(&body_text).unwrap_or(Value::String(body_text));
 
             out.push(Item::new(Value::Object(serde_json::Map::from_iter([
                 ("status".into(), Value::from(status)),

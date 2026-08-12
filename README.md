@@ -55,9 +55,10 @@ A workflow is a set of nodes connected by edges. Each node receives a list of JS
 - `transform.filter` — branch on conditions
 - `transform.set` — modify JSON fields
 - `transform.delay` — pace execution
+- `ai.call` — Make an LLM Request to a OpenAI standart provider.
 - `db.sqlite` — run SQL against a database
 - `file.read`, `file.write` — read and write local files
-- `notify.slack`, `notify.discord`, `notify.smtp`, `notify.log` — notifications
+- `notify.smtp`, `notify.log` `notify.resend`— notifications
 
 ## Usage
 

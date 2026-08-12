@@ -90,8 +90,16 @@ mod tests {
     #[test]
     fn builds_valid_workflow() {
         let wf = Workflow::new("Test")
-            .knot("a", "trigger.schedule", serde_json::json!({ "cron": "* * * * *" }))
-            .knot("b", "http.request", serde_json::json!({ "url": "https://x.dev" }))
+            .knot(
+                "a",
+                "trigger.schedule",
+                serde_json::json!({ "cron": "* * * * *" }),
+            )
+            .knot(
+                "b",
+                "http.request",
+                serde_json::json!({ "url": "https://x.dev" }),
+            )
             .connect("a", "b")
             .active(true)
             .build()
@@ -106,7 +114,10 @@ mod tests {
 
     #[test]
     fn build_rejects_invalid() {
-        let err = Workflow::new("Bad").knot("a", "http.request", serde_json::json!({})).connect("a", "missing").build();
+        let err = Workflow::new("Bad")
+            .knot("a", "http.request", serde_json::json!({}))
+            .connect("a", "missing")
+            .build();
         assert!(err.is_err());
         assert_eq!(err.unwrap_err().len(), 1);
     }

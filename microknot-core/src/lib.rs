@@ -11,7 +11,7 @@ pub mod templ;
 pub mod validate;
 
 pub use builder::WorkflowBuilder;
-pub use engine::{run_workflow, RunResult, RunStep};
+pub use engine::{RunResult, RunStep, run_workflow};
 pub use error::{Error, Result};
 pub use item::Item;
 pub use knot::{Ctx, KnotDescriptor, Registry};

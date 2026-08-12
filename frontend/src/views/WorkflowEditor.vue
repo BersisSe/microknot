@@ -16,16 +16,13 @@ const workflowName = ref("");
 const knotCatalog = ref<KnotDescriptor[]>([]);
 let workflowMeta: Workflow | null = null;
 
-// Editor graph state — created once the workflow has loaded.
 let graph: ReturnType<typeof useGraphEditor> | null = null;
 const graphRef = ref<ReturnType<typeof useGraphEditor> | null>(null);
 
-// Template-facing aliases of the graph's reactive refs. Vue only auto-unwraps
-// top-level refs, so we can't read nested `graphRef.scale` directly in markup.
-const scale = ref(1);
-const panX = ref(40);
-const panY = ref(40);
-const selectedKnotId = ref<string | null>(null);
+const scale = computed(() => graph?.scale.value ?? 1);
+const panX = computed(() => graph?.panX.value ?? 40);
+const panY = computed(() => graph?.panY.value ?? 40);
+const selectedKnotId = computed(() => graph?.selectedKnotId.value ?? null);
 const selectedKnot = computed(() => graph?.selectedKnot.value ?? null);
 
 const selectedKnotSchema = computed(() => {
@@ -40,20 +37,29 @@ let draggingId: string | null = null;
 let dragOffset = { x: 0, y: 0 };
 let panning = false;
 let panStart = { x: 0, y: 0 };
-const wireDrag = ref<{ fromId: string; side: "in" | "out"; index: number; from: { x: number; y: number }; to: { x: number; y: number } } | null>(null);
+const wireDrag = ref<{
+  fromId: string;
+  side: "in" | "out";
+  index: number;
+  from: { x: number; y: number };
+  to: { x: number; y: number };
+} | null>(null);
 
 async function load() {
   try {
-    const [wfBody, knotsBody] = await Promise.all([api.getWorkflow(props.id), api.listKnots()]);
+    const [wfBody, knotsBody] = await Promise.all([
+      api.getWorkflow(props.id),
+      api.listKnots(),
+    ]);
     workflowMeta = wfBody.data;
     knotCatalog.value = knotsBody.data;
     workflowName.value = workflowMeta.name;
-    graph = useGraphEditor(workflowMeta.knots, workflowMeta.connections, knotCatalog.value);
+    graph = useGraphEditor(
+      workflowMeta.knots,
+      workflowMeta.connections,
+      knotCatalog.value,
+    );
     graphRef.value = graph;
-    scale.value = graph.scale.value;
-    panX.value = graph.panX.value;
-    panY.value = graph.panY.value;
-    selectedKnotId.value = graph.selectedKnotId.value;
     loaded.value = true;
   } catch (e) {
     errorMessage.value = e instanceof ApiError ? e.message : String(e);
@@ -86,7 +92,12 @@ function onKnotMouseDown(e: MouseEvent, id: string) {
   dragOffset = { x: p.x - k.x, y: p.y - k.y };
 }
 
-function onPortMouseDown(e: MouseEvent, id: string, side: "in" | "out", index: number) {
+function onPortMouseDown(
+  e: MouseEvent,
+  id: string,
+  side: "in" | "out",
+  index: number,
+) {
   e.stopPropagation();
   const g = graph!;
   const start = g.portPos(id, side, index);
@@ -96,7 +107,11 @@ function onPortMouseDown(e: MouseEvent, id: string, side: "in" | "out", index: n
 
 function onCanvasMouseDown(e: MouseEvent) {
   const target = e.target as HTMLElement;
-  if (target === canvasEl.value || target.classList.contains("wires") || target.classList.contains("empty-canvas")) {
+  if (
+    target === canvasEl.value ||
+    target.classList.contains("wires") ||
+    target.classList.contains("empty-canvas")
+  ) {
     const g = graph!;
     panning = true;
     panStart = { x: e.clientX - g.panX.value, y: e.clientY - g.panY.value };
@@ -134,7 +149,9 @@ function onWindowMouseUp(e: MouseEvent) {
     draggingId = null;
   }
   if (wireDrag.value && graph) {
-    const target = (e.target as HTMLElement).closest(".port") as HTMLElement | null;
+    const target = (e.target as HTMLElement).closest(
+      ".port",
+    ) as HTMLElement | null;
     if (target) {
       const otherId = target.dataset.id!;
       const otherSide = target.dataset.port as "in" | "out";
@@ -160,6 +177,14 @@ function selectKnot(id: string) {
 function onNameInput() {
   graph?.markDirty();
 }
+function knotGlyphTransform(
+  p1: { x: number; y: number },
+  p2: { x: number; y: number },
+) {
+  const mx = (p1.x + p2.x) / 2;
+  const my = (p1.y + p2.y) / 2;
+  return `translate(${mx}, ${my})`;
+}
 
 async function save() {
   if (!graph || !workflowMeta) return;
@@ -180,7 +205,8 @@ async function save() {
 }
 
 function discard() {
-  if (graph?.dirty.value && !confirm("Discard changes to this workflow?")) return;
+  if (graph?.dirty.value && !confirm("Discard changes to this workflow?"))
+    return;
   router.push({ name: "list" });
 }
 
@@ -232,7 +258,9 @@ const incomingConnections = computed(() => {
   return graph.connections.filter((c) => c.to === id);
 });
 
-const selectedConnectionIdx = computed(() => graph?.selectedConnection.value ?? null);
+const selectedConnectionIdx = computed(
+  () => graph?.selectedConnection.value ?? null,
+);
 
 const selectedConnectionDetail = computed(() => {
   const idx = selectedConnectionIdx.value;
@@ -261,15 +289,28 @@ function onWireClick(idx: number) {
       <input
         v-model="workflowName"
         class="muted"
-        style="font-family: var(--mono); font-size: 12px; background: var(--bg-sunken); border: 1px solid var(--border); border-radius: var(--radius); padding: 5px 8px; color: var(--text); width: 200px;"
+        style="
+          font-family: var(--mono);
+          font-size: 12px;
+          background: var(--bg-sunken);
+          border: 1px solid var(--border);
+          border-radius: var(--radius);
+          padding: 5px 8px;
+          color: var(--text);
+          width: 200px;
+        "
         @input="onNameInput"
       />
       <button class="btn" @click="discard">Discard</button>
-      <button class="btn btn-primary" :disabled="!loaded" @click="save">Save workflow</button>
+      <button class="btn btn-primary" :disabled="!loaded" @click="save">
+        Save workflow
+      </button>
     </div>
   </header>
 
-  <div class="banner" :class="{ hidden: !errorMessage }">Error: {{ errorMessage }}</div>
+  <div class="banner" :class="{ hidden: !errorMessage }">
+    Error: {{ errorMessage }}
+  </div>
 
   <div v-if="loaded && graphRef" class="editor-shell">
     <aside class="palette">
@@ -286,14 +327,23 @@ function onWireClick(idx: number) {
           <span class="p-desc">{{ item.description || item.name }}</span>
         </div>
       </div>
-      <div class="palette-hint">drag a knot onto&#10;the canvas to add it.&#10;drag from a port to&#10;connect two knots.</div>
+      <div class="palette-hint">
+        drag a knot onto&#10;the canvas to add it.&#10;drag from a port
+        to&#10;connect two knots.
+      </div>
     </aside>
 
     <div class="canvas-wrap">
       <div class="canvas-toolbar">
-        <button class="btn btn-small" @click="graphRef?.setZoom(scale - 0.1)">&minus;</button>
-        <button class="btn btn-small" @click="graphRef?.resetView()">Reset view</button>
-        <button class="btn btn-small" @click="graphRef?.setZoom(scale + 0.1)">+</button>
+        <button class="btn btn-small" @click="graphRef?.setZoom(scale - 0.1)">
+          &minus;
+        </button>
+        <button class="btn btn-small" @click="graphRef?.resetView()">
+          Reset view
+        </button>
+        <button class="btn btn-small" @click="graphRef?.setZoom(scale + 0.1)">
+          +
+        </button>
       </div>
 
       <div
@@ -310,43 +360,75 @@ function onWireClick(idx: number) {
             <path
               v-for="(c, idx) in graphRef.connections"
               :key="idx"
-              :d="graphRef.wirePath(graphRef.portPos(c.from, 'out', c.fromOutput), graphRef.portPos(c.to, 'in', c.toInput))"
+              :d="
+                graphRef.wirePath(
+                  graphRef.portPos(c.from, 'out', c.fromOutput),
+                  graphRef.portPos(c.to, 'in', c.toInput),
+                )
+              "
               fill="none"
               :stroke="selectedConnectionIdx === idx ? '#e0b04a' : '#d4a13d'"
               :stroke-width="selectedConnectionIdx === idx ? 2.2 : 1.6"
+              stroke-dasharray="8 4"
               stroke-opacity="0.75"
               :style="{ pointerEvents: 'stroke', cursor: 'pointer' }"
               @click.stop="onWireClick(idx)"
             />
-            <path
-              v-if="wireDrag"
-              :d="graphRef.wirePath(wireDrag.from, wireDrag.to)"
-              fill="none"
-              stroke="#77808c"
-              stroke-width="1.6"
-              stroke-dasharray="4 3"
-            />
+            <g
+              v-for="(c, idx) in graphRef.connections"
+              :key="`knot-${idx}`"
+              :transform="
+                knotGlyphTransform(
+                  graphRef.portPos(c.from, 'out', c.fromOutput),
+                  graphRef.portPos(c.to, 'in', c.toInput),
+                )
+              "
+              :opacity="selectedConnectionIdx === idx ? 1 : 0.85"
+            >
+              <path
+                d="M -7 0 A 4 4 0 1 1 1 0 A 4 4 0 1 1 -7 0 M -3 -3.2 A 4 4 0 1 1 5 -3.2 A 4 4 0 1 1 -3 -3.2"
+                fill="none"
+                :stroke="selectedConnectionIdx === idx ? '#e0b04a' : '#d4a13d'"
+                stroke-width="1.4"
+                stroke-opacity="0.9"
+              />
+            </g>
           </g>
         </svg>
 
         <div
-          class="node-layer"
-          :style="{ transform: `translate(${panX}px, ${panY}px) scale(${scale})` }"
+          class="knot-layer"
+          :style="{
+            transform: `translate(${panX}px, ${panY}px) scale(${scale})`,
+          }"
         >
           <div
             v-for="k in graphRef.knots"
             :key="k.id"
-            class="node"
-            :class="{ selected: k.id === selectedKnotId, dragging: draggingId === k.id }"
-            :style="{ left: k.x + 'px', top: k.y + 'px', height: graphRef.nodeHeight(k.type) + 'px' }"
+            class="knot"
+            :class="{
+              selected: k.id === selectedKnotId,
+              dragging: draggingId === k.id,
+            }"
+            :style="{
+              left: k.x + 'px',
+              top: k.y + 'px',
+              height: graphRef.nodeHeight(k.type) + 'px',
+            }"
             @mousedown="onKnotMouseDown($event, k.id)"
           >
-            <div class="node-head">
-              <span class="node-kind">{{ k.type }}</span>
-              <button class="node-remove" title="remove knot" @click.stop="graphRef.removeKnot(k.id)">&times;</button>
+            <div class="knot-head">
+              <span class="knot-kind">{{ k.type }}</span>
+              <button
+                class="knot-remove"
+                title="remove knot"
+                @click.stop="graphRef.removeKnot(k.id)"
+              >
+                &times;
+              </button>
             </div>
-            <div class="node-body">
-              <div class="muted" style="font-size: 10px;">{{ k.id }}</div>
+            <div class="knot-body">
+              <div class="muted" style="font-size: 10px">{{ k.id }}</div>
             </div>
             <div
               v-for="pi in graphRef.inputCount(k.type)"
@@ -372,51 +454,92 @@ function onWireClick(idx: number) {
           </div>
         </div>
 
-        <div v-if="graphRef.knots.length === 0" class="empty-canvas">drag a knot from the catalog to begin</div>
+        <div v-if="graphRef.knots.length === 0" class="empty-canvas">
+          drag a knot from the catalog to begin
+        </div>
       </div>
 
-      <div class="canvas-zoom"><span>{{ Math.round(scale * 100) }}%</span></div>
+      <div class="canvas-zoom">
+        <span>{{ Math.round(scale * 100) }}%</span>
+      </div>
     </div>
 
     <aside class="inspector">
       <div class="inspector-header">Inspector</div>
-      <div v-if="!selectedKnot && !selectedConnectionDetail" class="empty" style="padding: 12px 0; text-align: left;">
+      <div
+        v-if="!selectedKnot && !selectedConnectionDetail"
+        class="empty"
+        style="padding: 12px 0; text-align: left"
+      >
         Select a knot to edit its params, or click a wire to cut it.
       </div>
       <template v-if="selectedConnectionDetail">
         <div class="field">
           <label>Selected connection</label>
           <div class="conn-row">
-            <span>{{ selectedConnectionDetail.from }} → {{ selectedConnectionDetail.to }}</span>
-            <button class="btn btn-small btn-danger" @click="cutSelectedConnection">Cut</button>
+            <span
+              >{{ selectedConnectionDetail.from }} →
+              {{ selectedConnectionDetail.to }}</span
+            >
+            <button
+              class="btn btn-small btn-danger"
+              @click="cutSelectedConnection"
+            >
+              Cut
+            </button>
           </div>
-          <div class="muted" style="font-size: 10px; margin-top: 4px;">
-            out {{ selectedConnectionDetail.fromOutput }} → in {{ selectedConnectionDetail.toInput }}
+          <div class="muted" style="font-size: 10px; margin-top: 4px">
+            out {{ selectedConnectionDetail.fromOutput }} → in
+            {{ selectedConnectionDetail.toInput }}
           </div>
         </div>
       </template>
       <template v-else-if="selectedKnot">
-        <div class="field"><label>Type</label><input :value="selectedKnot.type" disabled /></div>
-        <div class="field"><label>ID</label><input :value="selectedKnot.id" disabled /></div>
+        <div class="field">
+          <label>Type</label><input :value="selectedKnot.type" disabled />
+        </div>
+        <div class="field">
+          <label>ID</label><input :value="selectedKnot.id" disabled />
+        </div>
         <KnotParamsForm
           :knot="selectedKnot"
           :schema="selectedKnotSchema"
           :key="selectedKnot.id"
-          style="margin-top: 2px;"
+          style="margin-top: 2px"
           @change="graphRef?.markDirty()"
         />
         <div class="field">
           <label>Connections out ({{ outgoingConnections.length }})</label>
-          <div v-for="(c, idx) in outgoingConnections" :key="idx" class="conn-row">
-            <span>&rarr; {{ c.to }} (out {{ c.fromOutput }} &rarr; in {{ c.toInput }})</span>
-            <button @click="graphRef.removeConnection(graphRef.connections.indexOf(c))">&times;</button>
+          <div
+            v-for="(c, idx) in outgoingConnections"
+            :key="idx"
+            class="conn-row"
+          >
+            <span
+              >&rarr; {{ c.to }} (out {{ c.fromOutput }} &rarr; in
+              {{ c.toInput }})</span
+            >
+            <button
+              @click="
+                graphRef.removeConnection(graphRef.connections.indexOf(c))
+              "
+            >
+              &times;
+            </button>
           </div>
           <div v-if="outgoingConnections.length === 0" class="muted">none</div>
         </div>
         <div class="field">
           <label>Connections in ({{ incomingConnections.length }})</label>
-          <div v-for="(c, idx) in incomingConnections" :key="idx" class="conn-row">
-            <span>&larr; {{ c.from }} (out {{ c.fromOutput }} &rarr; in {{ c.toInput }})</span>
+          <div
+            v-for="(c, idx) in incomingConnections"
+            :key="idx"
+            class="conn-row"
+          >
+            <span
+              >&larr; {{ c.from }} (out {{ c.fromOutput }} &rarr; in
+              {{ c.toInput }})</span
+            >
           </div>
           <div v-if="incomingConnections.length === 0" class="muted">none</div>
         </div>

@@ -125,11 +125,7 @@ fn validate_registry(wf: &Workflow, errors: &mut Vec<ValidationError>) {
 
 fn find_cycle(wf: &Workflow) -> Option<Vec<String>> {
     let order: Vec<&str> = wf.knots.iter().map(|k| k.id.as_str()).collect();
-    let index: HashMap<&str, usize> = order
-        .iter()
-        .enumerate()
-        .map(|(i, id)| (*id, i))
-        .collect();
+    let index: HashMap<&str, usize> = order.iter().enumerate().map(|(i, id)| (*id, i)).collect();
     let n = order.len();
 
     let mut adjacency: Vec<Vec<usize>> = vec![Vec::new(); n];
@@ -181,19 +177,24 @@ mod tests {
     use crate::model::Knot;
     use serde_json::json;
 
-    fn workflow(knots: Vec<(&str, &str)>, connections: Vec<(String, usize, String, usize)>) -> Workflow {
+    fn workflow(
+        knots: Vec<(&str, &str)>,
+        connections: Vec<(String, usize, String, usize)>,
+    ) -> Workflow {
         let knots = knots
             .into_iter()
             .map(|(id, kind)| Knot::new(id, kind, json!({})))
             .collect();
         let connections = connections
             .into_iter()
-            .map(|(from, from_output, to, to_input)| crate::model::Connection {
-                from,
-                from_output,
-                to,
-                to_input,
-            })
+            .map(
+                |(from, from_output, to, to_input)| crate::model::Connection {
+                    from,
+                    from_output,
+                    to,
+                    to_input,
+                },
+            )
             .collect();
         Workflow {
             id: "wf".into(),
@@ -223,7 +224,10 @@ mod tests {
 
     #[test]
     fn valid_workflow() {
-        let wf = workflow_simple(vec![("a", "trigger.schedule"), ("b", "http.request")], &[("a", "b")]);
+        let wf = workflow_simple(
+            vec![("a", "trigger.schedule"), ("b", "http.request")],
+            &[("a", "b")],
+        );
         assert!(validate(&wf).is_ok());
     }
 
@@ -244,7 +248,11 @@ mod tests {
     #[test]
     fn duplicate_knot_id() {
         let wf = workflow_simple(vec![("a", "x"), ("a", "y")], &[]);
-        assert!(errors(&wf).iter().any(|m| m.contains("duplicate knot id 'a'")));
+        assert!(
+            errors(&wf)
+                .iter()
+                .any(|m| m.contains("duplicate knot id 'a'"))
+        );
     }
 
     #[test]
@@ -257,12 +265,19 @@ mod tests {
     #[test]
     fn duplicate_connection() {
         let wf = workflow_simple(vec![("a", "x"), ("b", "y")], &[("a", "b"), ("a", "b")]);
-        assert!(errors(&wf).iter().any(|m| m.contains("duplicate connection")));
+        assert!(
+            errors(&wf)
+                .iter()
+                .any(|m| m.contains("duplicate connection"))
+        );
     }
 
     #[test]
     fn cycle_detected() {
-        let wf = workflow_simple(vec![("a", "x"), ("b", "y"), ("c", "z")], &[("a", "b"), ("b", "c"), ("c", "a")]);
+        let wf = workflow_simple(
+            vec![("a", "x"), ("b", "y"), ("c", "z")],
+            &[("a", "b"), ("b", "c"), ("c", "a")],
+        );
         let msgs = errors(&wf);
         assert!(msgs.iter().any(|m| m.contains("cycle")));
     }
@@ -276,7 +291,12 @@ mod tests {
     #[test]
     fn diamond_is_valid() {
         let wf = workflow_simple(
-            vec![("a", "notify.log"), ("b", "transform.set"), ("c", "transform.filter"), ("d", "transform.delay")],
+            vec![
+                ("a", "notify.log"),
+                ("b", "transform.set"),
+                ("c", "transform.filter"),
+                ("d", "transform.delay"),
+            ],
             &[("a", "b"), ("a", "c"), ("b", "d"), ("c", "d")],
         );
         assert!(validate(&wf).is_ok());

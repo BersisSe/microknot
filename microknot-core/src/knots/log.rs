@@ -15,14 +15,19 @@ pub const DESCRIPTOR: KnotDescriptor = KnotDescriptor {
 };
 
 pub fn schema() -> KnotSchema {
-    vec![ParamField::textarea("message", "Message")
-        .placeholder("Log {{ $json.field }}")
-        .help("Blank logs the whole item as JSON.")]
+    vec![
+        ParamField::textarea("message", "Message")
+            .placeholder("Log {{ $json.field }}")
+            .help("Blank logs the whole item as JSON."),
+    ]
 }
 
 pub fn factory(params: &Value) -> Box<dyn Knot> {
     Box::new(Log {
-        message: params.get("message").and_then(Value::as_str).map(String::from),
+        message: params
+            .get("message")
+            .and_then(Value::as_str)
+            .map(String::from),
     })
 }
 
@@ -34,7 +39,11 @@ impl Knot for Log {
     fn run(&self, ctx: &Ctx, input: Vec<Item>) -> Result<Vec<Vec<Item>>> {
         for item in &input {
             match &self.message {
-                Some(message) => println!("[{}] {}", ctx.workflow_id, templ::render_string(message, item)),
+                Some(message) => println!(
+                    "[{}] {}",
+                    ctx.workflow_id,
+                    templ::render_string(message, item)
+                ),
                 None => println!("[{}] {}", ctx.workflow_id, item.json),
             }
         }
@@ -52,7 +61,9 @@ mod tests {
     fn passes_items_through() {
         let knot = factory(&json!({}));
         let items = vec![Item::new(json!({ "a": 1 }))];
-        let ctx = Ctx { workflow_id: "w".into() };
+        let ctx = Ctx {
+            workflow_id: "w".into(),
+        };
         let out = knot.run(&ctx, items).unwrap();
         assert_eq!(out.len(), 1);
         assert_eq!(out[0].len(), 1);

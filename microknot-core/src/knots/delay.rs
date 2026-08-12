@@ -1,7 +1,7 @@
 use std::thread;
 use std::time::Duration;
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use crate::error::Result;
 use crate::item::Item;
@@ -21,7 +21,10 @@ pub fn schema() -> KnotSchema {
 }
 
 pub fn factory(params: &Value) -> Box<dyn Knot> {
-    let milliseconds = params.get("milliseconds").and_then(Value::as_u64).unwrap_or(0);
+    let milliseconds = params
+        .get("milliseconds")
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
     Box::new(Delay { milliseconds })
 }
 

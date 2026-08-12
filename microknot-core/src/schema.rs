@@ -214,7 +214,10 @@ mod tests {
             ("transform.delay", &["milliseconds"]),
             ("transform.filter", &["conditions", "mode"]),
             ("notify.log", &["message"]),
-            ("notify.resend", &["apiKey", "from", "to", "subject", "html", "text"]),
+            (
+                "notify.resend",
+                &["apiKey", "from", "to", "subject", "html", "text"],
+            ),
             ("trigger.webhook", &[]),
             ("trigger.schedule", &[]),
         ];

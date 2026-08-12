@@ -7,7 +7,12 @@ use microknot_core::{Store, Workflow};
 #[command(name = "microknot", version, about = "A local-first workflow engine")]
 struct Cli {
     /// Path to the SQLite database
-    #[arg(long, global = true, env = "MICROKNOT_DB", default_value = "./microknot.db")]
+    #[arg(
+        long,
+        global = true,
+        env = "MICROKNOT_DB",
+        default_value = "./microknot.db"
+    )]
     db: PathBuf,
     #[command(subcommand)]
     command: Command,

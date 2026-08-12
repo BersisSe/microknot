@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 
 use crate::error::{Error, Result};
 use crate::model::Workflow;
@@ -111,7 +111,9 @@ impl Store {
     }
 
     pub fn delete_workflow(&self, id: &str) -> Result<bool> {
-        let deleted = self.conn.execute("DELETE FROM workflows WHERE id = ?1", params![id])?;
+        let deleted = self
+            .conn
+            .execute("DELETE FROM workflows WHERE id = ?1", params![id])?;
         Ok(deleted > 0)
     }
 
@@ -210,7 +212,12 @@ mod tests {
         let store = Store::open_in_memory().unwrap();
         store.insert_workflow(&sample("w1")).unwrap();
         store.insert_workflow(&sample("w2")).unwrap();
-        let ids: Vec<String> = store.list_workflows().unwrap().into_iter().map(|w| w.id).collect();
+        let ids: Vec<String> = store
+            .list_workflows()
+            .unwrap()
+            .into_iter()
+            .map(|w| w.id)
+            .collect();
         assert_eq!(ids, vec!["w1".to_string(), "w2".to_string()]);
     }
 }

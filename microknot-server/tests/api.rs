@@ -34,10 +34,7 @@ fn agent() -> ureq::Agent {
 
 fn read(resp: http::Response<ureq::Body>) -> (u16, Value) {
     let status = resp.status().as_u16();
-    let text = resp
-        .into_body()
-        .read_to_string()
-        .unwrap_or_default();
+    let text = resp.into_body().read_to_string().unwrap_or_default();
     let value = if text.trim().is_empty() {
         Value::Null
     } else {
@@ -56,7 +53,12 @@ fn post_workflow(agent: &ureq::Agent, body: &str) -> (u16, Value) {
 }
 
 fn get_workflow(agent: &ureq::Agent, id: &str) -> (u16, Value) {
-    read(agent.get(&format!("{BASE}/workflows/{id}")).call().expect("transport error"))
+    read(
+        agent
+            .get(&format!("{BASE}/workflows/{id}"))
+            .call()
+            .expect("transport error"),
+    )
 }
 
 fn put_workflow(agent: &ureq::Agent, id: &str, body: &str) -> (u16, Value) {
@@ -69,7 +71,12 @@ fn put_workflow(agent: &ureq::Agent, id: &str, body: &str) -> (u16, Value) {
 }
 
 fn delete_workflow(agent: &ureq::Agent, id: &str) -> (u16, Value) {
-    read(agent.delete(&format!("{BASE}/workflows/{id}")).call().expect("transport error"))
+    read(
+        agent
+            .delete(&format!("{BASE}/workflows/{id}"))
+            .call()
+            .expect("transport error"),
+    )
 }
 
 fn valid_body(id: &str) -> String {
@@ -89,7 +96,10 @@ fn health_ok() {
 fn create_assigns_generated_id() {
     start_server();
     let agent = agent();
-    let (status, body) = post_workflow(&agent, r#"{"name":"Generated","knots":[{"id":"a","type":"trigger.webhook"}]}"#);
+    let (status, body) = post_workflow(
+        &agent,
+        r#"{"name":"Generated","knots":[{"id":"a","type":"trigger.webhook"}]}"#,
+    );
     assert_eq!(status, 201);
     let id = body["data"]["id"].as_str().unwrap().to_string();
     assert!(!id.is_empty());
@@ -173,7 +183,12 @@ fn invalid_workflow_is_422() {
 fn knots_catalog_lists_types() {
     start_server();
     let agent = agent();
-    let (status, body) = read(agent.get(&format!("{BASE}/knots")).call().expect("transport error"));
+    let (status, body) = read(
+        agent
+            .get(&format!("{BASE}/knots"))
+            .call()
+            .expect("transport error"),
+    );
     assert_eq!(status, 200);
     let knots = body["data"].as_array().unwrap();
     assert!(knots.len() >= 7);
@@ -194,7 +209,10 @@ fn knots_catalog_lists_types() {
             with_fields += 1;
         }
     }
-    assert!(with_fields >= 6, "expected most knots to declare params, got {with_fields}");
+    assert!(
+        with_fields >= 6,
+        "expected most knots to declare params, got {with_fields}"
+    );
 
     let http = knots.iter().find(|k| k["kind"] == "http.request").unwrap();
     let keys: Vec<String> = http["schema"]

@@ -1,5 +1,5 @@
 use regex::Regex;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use crate::error::{Error, Result};
 use crate::item::Item;
@@ -17,12 +17,21 @@ pub const DESCRIPTOR: KnotDescriptor = KnotDescriptor {
 
 pub fn schema() -> KnotSchema {
     let operators: Vec<FieldOption> = [
-        ("eq", "EQ"), ("neq", "NEQ"), ("contains", "CONTAINS"),
-        ("regex", "REGEX"), ("gt", "GT"), ("gte", "GTE"),
-        ("lt", "LT"), ("lte", "LTE"), ("exists", "EXISTS"),
+        ("eq", "EQ"),
+        ("neq", "NEQ"),
+        ("contains", "CONTAINS"),
+        ("regex", "REGEX"),
+        ("gt", "GT"),
+        ("gte", "GTE"),
+        ("lt", "LT"),
+        ("lte", "LTE"),
+        ("exists", "EXISTS"),
     ]
     .iter()
-    .map(|(v, l)| FieldOption { value: v.to_string(), label: l.to_string() })
+    .map(|(v, l)| FieldOption {
+        value: v.to_string(),
+        label: l.to_string(),
+    })
     .collect();
 
     vec![
@@ -33,8 +42,14 @@ pub fn schema() -> KnotSchema {
         ]),
         ParamField::select("mode", "Mode")
             .options(vec![
-                FieldOption { value: "all".into(), label: "ALL".into() },
-                FieldOption { value: "any".into(), label: "ANY".into() },
+                FieldOption {
+                    value: "all".into(),
+                    label: "ALL".into(),
+                },
+                FieldOption {
+                    value: "any".into(),
+                    label: "ANY".into(),
+                },
             ])
             .default(json!("all")),
     ]
@@ -47,7 +62,10 @@ pub fn factory(params: &Value) -> Box<dyn Knot> {
         .map(|arr| arr.iter().filter_map(Condition::from_value).collect())
         .unwrap_or_default();
     let require_all = params.get("mode").and_then(Value::as_str) != Some("any");
-    Box::new(Filter { conditions, require_all })
+    Box::new(Filter {
+        conditions,
+        require_all,
+    })
 }
 
 pub struct Filter {
@@ -79,7 +97,11 @@ impl Condition {
         let field = value.get("field")?.as_str()?.to_string();
         let operator = Operator::parse(value.get("operator")?.as_str()?)?;
         let value = value.get("value").cloned().unwrap_or(Value::Null);
-        Some(Self { field, operator, value })
+        Some(Self {
+            field,
+            operator,
+            value,
+        })
     }
 }
 
@@ -180,7 +202,9 @@ mod tests {
 
     fn run_filter(conditions: Value, items: Vec<Value>) -> (Vec<Value>, Vec<Value>) {
         let knot = factory(&json!({ "conditions": conditions }));
-        let ctx = Ctx { workflow_id: "w".into() };
+        let ctx = Ctx {
+            workflow_id: "w".into(),
+        };
         let input: Vec<Item> = items.into_iter().map(Item::new).collect();
         let out = knot.run(&ctx, input).unwrap();
         let to_json = |v: &[Item]| v.iter().map(|i| i.json.clone()).collect::<Vec<_>>();
@@ -201,7 +225,10 @@ mod tests {
     fn contains_and_regex() {
         let (match_, no_match) = run_filter(
             json!([{ "field": "email", "operator": "contains", "value": "@example.com" }]),
-            vec![json!({ "email": "a@example.com" }), json!({ "email": "b@other.org" })],
+            vec![
+                json!({ "email": "a@example.com" }),
+                json!({ "email": "b@other.org" }),
+            ],
         );
         assert_eq!(match_.len(), 1);
         assert_eq!(no_match.len(), 1);
@@ -219,7 +246,9 @@ mod tests {
             { "field": "a", "operator": "eq", "value": 1 },
             { "field": "b", "operator": "eq", "value": 2 }
         ] }));
-        let ctx = Ctx { workflow_id: "w".into() };
+        let ctx = Ctx {
+            workflow_id: "w".into(),
+        };
         let input = vec![
             Item::new(json!({ "a": 1, "b": 2 })),
             Item::new(json!({ "a": 1, "b": 3 })),

@@ -35,7 +35,7 @@ pub fn factory(params: &Value) -> Box<dyn Knot> {
             .unwrap_or_default()
             .to_string()
     };
-    
+
     let optional = |key: &str| {
         params
             .get(key)
@@ -43,14 +43,9 @@ pub fn factory(params: &Value) -> Box<dyn Knot> {
             .and_then(|n| n.as_i64())
             .map(|n| n as i32)
     };
-    
-    let optional_float = |key: &str| {
-        params
-            .get(key)
-            .and_then(Value::as_f64)
-            .map(|f| f as f32)
-    };
-    
+
+    let optional_float = |key: &str| params.get(key).and_then(Value::as_f64).map(|f| f as f32);
+
     Box::new(AI {
         api_key: or_default("apiKey"),
         model: or_default("model"),
@@ -91,7 +86,7 @@ impl Knot for AI {
                     {"role": "user", "content": user_prompt}
                 ]
             });
-            
+
             // Add optional fields
             if let Some(tokens) = self.max_tokens {
                 body["max_tokens"] = json!(tokens);
@@ -99,27 +94,31 @@ impl Knot for AI {
             if let Some(temp) = self.temperature {
                 body["temperature"] = json!(temp);
             }
-            let mut response = self.agent.post(&self.endpoint)
+            let mut response = self
+                .agent
+                .post(&self.endpoint)
                 .header("Authorization", &format!("Bearer {}", self.api_key))
                 .header("Content-Type", "application/json")
                 .send(body.to_string())
                 .map_err(|e| Error::Knot(format!("AI request failed: {}", e)))?;
-            
+
             // Parse response
             let status = response.status();
-            let body_text = response.body_mut().read_to_string()
+            let body_text = response
+                .body_mut()
+                .read_to_string()
                 .map_err(|e| Error::Knot(format!("Failed to read response: {}", e)))?;
-            
+
             let response_json: Value = serde_json::from_str(&body_text)
                 .unwrap_or_else(|_| json!({"error": "Invalid JSON", "raw": body_text}));
-            
+
             // Build output item
             let output = if status.is_success() {
                 let content = response_json["choices"][0]["message"]["content"]
                     .as_str()
                     .unwrap_or("")
                     .to_string();
-                
+
                 json!({
                     "content": content,
                     "model": self.model,
@@ -133,7 +132,7 @@ impl Knot for AI {
                     "raw": response_json
                 })
             };
-            
+
             out.push(Item::new(output));
         }
         Ok(vec![out])

@@ -296,7 +296,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
 }
 
 svg.wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.node-layer { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+.knot-layer { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
 
 .wires path {
   stroke-dasharray: 1000;
@@ -307,22 +307,22 @@ svg.wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-eve
   to { stroke-dashoffset: 0; }
 }
 
-.node {
+.knot {
   position: absolute; width: 168px; background: var(--bg-panel);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   box-shadow: var(--elev-1);
   user-select: none; cursor: grab;
 }
-.node:hover { box-shadow: var(--elev-2); border-color: var(--border-strong); }
-.node.dragging { cursor: grabbing; z-index: 20; box-shadow: var(--elev-3); }
-.node.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-dim), var(--elev-2); }
+.knot:hover { box-shadow: var(--elev-2); border-color: var(--border-strong); }
+.knot.dragging { cursor: grabbing; z-index: 20; box-shadow: var(--elev-3); }
+.knot.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-dim), var(--elev-2); }
 
-.node-head { display: flex; align-items: center; justify-content: space-between; padding: 7px 9px; border-bottom: 1px solid var(--border); background: linear-gradient(180deg, var(--bg-hover), var(--bg-panel)); border-radius: var(--radius) var(--radius) 0 0; }
-.node-kind { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--accent); }
-.node-remove { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 13px; line-height: 1; padding: 2px 4px; }
-.node-remove:hover { color: var(--danger); }
-.node-body { padding: 8px 9px 9px; font-size: 11px; color: var(--text-muted); }
+.knot-head { display: flex; align-items: center; justify-content: space-between; padding: 7px 9px; border-bottom: 1px solid var(--border); background: linear-gradient(180deg, var(--bg-hover), var(--bg-panel)); border-radius: var(--radius) var(--radius) 0 0; }
+.knot-kind { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--accent); }
+.knot-remove { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 13px; line-height: 1; padding: 2px 4px; }
+.knot-remove:hover { color: var(--danger); }
+.knot-body { padding: 8px 9px 9px; font-size: 11px; color: var(--text-muted); }
 
 .port { position: absolute; width: 11px; height: 11px; border-radius: 50%; background: var(--bg-sunken); border: 2px solid var(--border-strong); cursor: crosshair; transform: translateY(-50%); box-shadow: 0 0 0 rgba(212, 161, 61, 0); }
 .port:hover, .port.active { border-color: var(--accent); background: var(--accent-strong); box-shadow: 0 0 10px 1px var(--accent-glow-strong); transform: translateY(-50%) scale(1.3); }

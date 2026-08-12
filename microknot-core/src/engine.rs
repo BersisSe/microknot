@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use crate::error::{Error, Result};
 use crate::item::Item;
@@ -22,7 +22,11 @@ pub struct RunResult {
     pub steps: Vec<RunStep>,
 }
 
-pub fn run_workflow(workflow: &Workflow, registry: &Registry, body: Option<Value>) -> Result<RunResult> {
+pub fn run_workflow(
+    workflow: &Workflow,
+    registry: &Registry,
+    body: Option<Value>,
+) -> Result<RunResult> {
     let order = topo_order(workflow)?;
     let by_id: HashMap<&str, &Knot> = workflow.knots.iter().map(|k| (k.id.as_str(), k)).collect();
 
@@ -41,7 +45,9 @@ pub fn run_workflow(workflow: &Workflow, registry: &Registry, body: Option<Value
                     stream.unwrap_or_else(|| vec![Item::new(seed.clone())])
                 }
             }
-            _ => streams.remove(&knot.id).unwrap_or_else(|| vec![Item::new(seed.clone())]),
+            _ => streams
+                .remove(&knot.id)
+                .unwrap_or_else(|| vec![Item::new(seed.clone())]),
         };
 
         let ctx = Ctx {
@@ -56,9 +62,11 @@ pub fn run_workflow(workflow: &Workflow, registry: &Registry, body: Option<Value
         })?;
 
         for (output_index, items) in outputs.iter().enumerate() {
-            for conn in workflow.connections.iter().filter(|c| {
-                c.from == knot.id && c.from_output == output_index
-            }) {
+            for conn in workflow
+                .connections
+                .iter()
+                .filter(|c| c.from == knot.id && c.from_output == output_index)
+            {
                 let entry = streams.entry(conn.to.clone()).or_default();
                 entry.extend(items.clone());
             }
@@ -80,11 +88,8 @@ pub fn run_workflow(workflow: &Workflow, registry: &Registry, body: Option<Value
 
 fn topo_order(workflow: &Workflow) -> Result<Vec<String>> {
     let by_id: HashSet<&str> = workflow.knots.iter().map(|k| k.id.as_str()).collect();
-    let mut indegree: HashMap<&str, usize> = workflow
-        .knots
-        .iter()
-        .map(|k| (k.id.as_str(), 0))
-        .collect();
+    let mut indegree: HashMap<&str, usize> =
+        workflow.knots.iter().map(|k| (k.id.as_str(), 0)).collect();
     let mut outgoing: HashMap<&str, Vec<&str>> = HashMap::new();
 
     for conn in &workflow.connections {
@@ -97,7 +102,10 @@ fn topo_order(workflow: &Workflow) -> Result<Vec<String>> {
         if let Some(count) = indegree.get_mut(conn.to.as_str()) {
             *count += 1;
         }
-        outgoing.entry(conn.from.as_str()).or_default().push(conn.to.as_str());
+        outgoing
+            .entry(conn.from.as_str())
+            .or_default()
+            .push(conn.to.as_str());
     }
 
     let mut queue: Vec<&str> = indegree
@@ -156,7 +164,10 @@ mod tests {
 
     #[test]
     fn runs_linear_workflow() {
-        let wf = workflow(vec![("a".into(), "notify.log".into()), ("b".into(), "notify.log".into())]);
+        let wf = workflow(vec![
+            ("a".into(), "notify.log".into()),
+            ("b".into(), "notify.log".into()),
+        ]);
         let registry = Registry::default();
         let result = run_workflow(&wf, &registry, None).unwrap();
         assert_eq!(result.status, "ok");
@@ -182,10 +193,23 @@ mod tests {
         let wf = Workflow {
             id: "wf".into(),
             name: "cycle".into(),
-            knots: vec![Knot::new("a", "notify.log", json!({})), Knot::new("b", "notify.log", json!({}))],
+            knots: vec![
+                Knot::new("a", "notify.log", json!({})),
+                Knot::new("b", "notify.log", json!({})),
+            ],
             connections: vec![
-                Connection { from: "a".into(), from_output: 0, to: "b".into(), to_input: 0 },
-                Connection { from: "b".into(), from_output: 0, to: "a".into(), to_input: 0 },
+                Connection {
+                    from: "a".into(),
+                    from_output: 0,
+                    to: "b".into(),
+                    to_input: 0,
+                },
+                Connection {
+                    from: "b".into(),
+                    from_output: 0,
+                    to: "a".into(),
+                    to_input: 0,
+                },
             ],
             active: false,
         };
@@ -196,10 +220,15 @@ mod tests {
 
     #[test]
     fn schedule_trigger_errors_on_manual_run() {
-let wf = workflow(vec![("a".into(), "trigger.schedule".into()), ("b".into(), 
-"notify.log".into())]);
+        let wf = workflow(vec![
+            ("a".into(), "trigger.schedule".into()),
+            ("b".into(), "notify.log".into()),
+        ]);
         let registry = Registry::default();
         let err = run_workflow(&wf, &registry, None).unwrap_err();
-        assert!(err.to_string().contains("schedule trigger cannot be executed manually"));
+        assert!(
+            err.to_string()
+                .contains("schedule trigger cannot be executed manually")
+        );
     }
 }

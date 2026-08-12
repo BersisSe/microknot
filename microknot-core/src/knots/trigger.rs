@@ -1,4 +1,4 @@
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use crate::error::{Error, Result};
 use crate::item::Item;
@@ -69,7 +69,9 @@ mod tests {
 
     #[test]
     fn webhook_seeds_empty_item() {
-        let ctx = Ctx { workflow_id: "w".into() };
+        let ctx = Ctx {
+            workflow_id: "w".into(),
+        };
         let out = Webhook.run(&ctx, vec![]).unwrap();
         assert_eq!(out[0][0].json, json!({}));
     }

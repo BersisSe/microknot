@@ -35,18 +35,55 @@ impl Registry {
         let mut registry = Self {
             factories: HashMap::new(),
         };
-        registry.register(knots::log::DESCRIPTOR, knots::log::factory, knots::log::schema);
-        registry.register(knots::set::DESCRIPTOR, knots::set::factory, knots::set::schema);
-        registry.register(knots::delay::DESCRIPTOR, knots::delay::factory, knots::delay::schema);
-        registry.register(knots::filter::DESCRIPTOR, knots::filter::factory, knots::filter::schema);
-        registry.register(knots::http::DESCRIPTOR, knots::http::factory, knots::http::schema);
-        registry.register(knots::resend::DESCRIPTOR, knots::resend::factory, knots::resend::schema);
-        registry.register(knots::trigger::WEBHOOK, knots::trigger::webhook_factory, knots::trigger::webhook_schema);
-        registry.register(knots::trigger::SCHEDULE, knots::trigger::schedule_factory, knots::trigger::schedule_schema);
+        registry.register(
+            knots::log::DESCRIPTOR,
+            knots::log::factory,
+            knots::log::schema,
+        );
+        registry.register(
+            knots::set::DESCRIPTOR,
+            knots::set::factory,
+            knots::set::schema,
+        );
+        registry.register(
+            knots::delay::DESCRIPTOR,
+            knots::delay::factory,
+            knots::delay::schema,
+        );
+        registry.register(
+            knots::filter::DESCRIPTOR,
+            knots::filter::factory,
+            knots::filter::schema,
+        );
+        registry.register(
+            knots::http::DESCRIPTOR,
+            knots::http::factory,
+            knots::http::schema,
+        );
+        registry.register(
+            knots::resend::DESCRIPTOR,
+            knots::resend::factory,
+            knots::resend::schema,
+        );
+        registry.register(
+            knots::trigger::WEBHOOK,
+            knots::trigger::webhook_factory,
+            knots::trigger::webhook_schema,
+        );
+        registry.register(
+            knots::trigger::SCHEDULE,
+            knots::trigger::schedule_factory,
+            knots::trigger::schedule_schema,
+        );
         registry
     }
 
-    pub fn register(&mut self, descriptor: KnotDescriptor, factory: KnotFactory, schema: SchemaFactory) {
+    pub fn register(
+        &mut self,
+        descriptor: KnotDescriptor,
+        factory: KnotFactory,
+        schema: SchemaFactory,
+    ) {
         self.factories
             .insert(descriptor.kind, (descriptor, factory, schema));
     }
@@ -64,8 +101,7 @@ impl Registry {
     }
 
     pub fn kinds(&self) -> Vec<&KnotDescriptor> {
-        let mut kinds: Vec<&KnotDescriptor> =
-            self.factories.values().map(|(d, _, _)| d).collect();
+        let mut kinds: Vec<&KnotDescriptor> = self.factories.values().map(|(d, _, _)| d).collect();
         kinds.sort_by_key(|d| d.kind);
         kinds
     }
@@ -73,11 +109,8 @@ impl Registry {
     /// Every knot's descriptor alongside its param schema, sorted by kind.
     /// This is the full catalog the UI needs to render palette + inspector.
     pub fn catalog(&self) -> Vec<(&KnotDescriptor, KnotSchema)> {
-        let mut catalog: Vec<(&KnotDescriptor, KnotSchema)> = self
-            .factories
-            .values()
-            .map(|(d, _, s)| (d, s()))
-            .collect();
+        let mut catalog: Vec<(&KnotDescriptor, KnotSchema)> =
+            self.factories.values().map(|(d, _, s)| (d, s())).collect();
         catalog.sort_by_key(|(d, _)| d.kind);
         catalog
     }
