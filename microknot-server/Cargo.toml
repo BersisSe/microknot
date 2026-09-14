@@ -2,7 +2,10 @@
 name = "microknot-server"
 version = "0.2.0"
 edition = "2024"
-
+description = "Local-first workflow engine"
+license = "AGPL-3.0"
+repository = "https://github.com/BersisSe/microknot"
+publish = false
 [[bin]]
 name = "microknot"
 path = "src/main.rs"

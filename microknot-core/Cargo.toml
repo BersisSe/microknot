@@ -2,6 +2,9 @@
 name = "microknot-core"
 version = "0.2.0"
 edition = "2024"
+description = "Local-first workflow engine"
+license = "AGPL-3.0"
+repository = "https://github.com/BersisSe/microknot"
 
 [dependencies]
 regex = "1"
