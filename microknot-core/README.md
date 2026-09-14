@@ -7,10 +7,10 @@ Workflows are JSON documents: a set of knots (nodes) connected by typed ports, e
 ## Usage
 
 ```rust
-use microknot_core::{Registry, Store, Workflow, run_workflow};
+use microknot_core::{Registry, Store, Workflow, WorkflowBuilder, run_workflow};
 use serde_json::json;
 
-// From JSON (same format the REST API accepts) ...
+// From JSON (same format the REST API accepts).
 let wf: Workflow = serde_json::from_str(r#"{
     "name": "demo",
     "knots": [
@@ -20,14 +20,12 @@ let wf: Workflow = serde_json::from_str(r#"{
     "connections": [{ "from": "a", "fromOutput": 0, "to": "b", "toInput": 0 }]
 }"#)?;
 
-// ... or from the builder.
+// Or from the builder (validates on build).
 let wf = WorkflowBuilder::new("demo")
     .knot("a", "trigger.webhook", json!({}))
     .knot("b", "notify.log", json!({ "message": "hi {{ $json.name }}" }))
     .connect("a", "b")
     .build()?;
-
-wf.validate()?;
 
 // Persist (SQLite, WAL mode) if you want to.
 let store = Store::open("microknot.db")?;
