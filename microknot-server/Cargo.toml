@@ -8,7 +8,7 @@ name = "microknot"
 path = "src/main.rs"
 
 [dependencies]
-microknot-core = { path = "../microknot-core" }
+microknot-core = { path = "../microknot-core", version="0.2.0"}
 clap = { version = "4", features = ["derive", "env"] }
 feather = { version = "0.8", features = ["json"] }
 rust-embed = "8"
