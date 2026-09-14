@@ -72,13 +72,11 @@ pub fn resolve(expr: &str, item: &Item) -> Option<Value> {
         }
         return resolve_path(&item.json, path.split('.'));
     }
-    
+
     // Add simple $env support
     if let Some(rest) = expr.strip_prefix("$env.") {
         let env_var = rest.trim();
-        return std::env::var(env_var)
-            .ok()
-            .map(|val| Value::String(val));
+        return std::env::var(env_var).ok().map(Value::String);
     }
     None
 }

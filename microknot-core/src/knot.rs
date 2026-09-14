@@ -30,8 +30,8 @@ pub struct Registry {
     factories: HashMap<&'static str, (KnotDescriptor, KnotFactory, SchemaFactory)>,
 }
 
-impl Registry {
-    pub fn default() -> Self {
+impl Default for Registry {
+    fn default() -> Self {
         let mut registry = Self {
             factories: HashMap::new(),
         };
@@ -77,7 +77,9 @@ impl Registry {
         );
         registry
     }
+}
 
+impl Registry {
     pub fn register(
         &mut self,
         descriptor: KnotDescriptor,

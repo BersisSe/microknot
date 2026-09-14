@@ -4,6 +4,15 @@
 
 <h1 align="center">Microknot</h1>
 
+<p align="center">
+  <a href="https://github.com/BersisSe/microknot/actions/workflows/ci.yml">
+    <img src="https://github.com/BersisSe/microknot/actions/workflows/ci.yml/badge.svg" alt="CI status">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="License: AGPL-3.0">
+  </a>
+</p>
+
 A local-first workflow engine written in Rust. Workflows are defined as JSON, executed by lightweight Rust nodes ("knots"), and orchestrated through a minimal REST API with an embedded Vue dashboard.
 
 ## Features
