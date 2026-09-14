@@ -41,9 +41,16 @@ export interface KnotDescriptor {
   schema: ParamField[];
 }
 
+export interface RunStep {
+  knot: string;
+  kind: string;
+  status: string;
+  items: number;
+}
+
 export interface RunResult {
   status: string;
-  steps?: unknown[];
+  steps: RunStep[];
 }
 
 // Client-only: a Knot plus canvas position, used only inside the editor.

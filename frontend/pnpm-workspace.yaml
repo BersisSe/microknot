@@ -1,2 +1,8 @@
-minimumReleaseAgeExclude:
-  - '@types/node@26.2.0'
+packages:
+  - "."
+
+allowBuilds:
+  vue-demi: false
+
+onlyBuiltDependencies:
+  - vue-demi

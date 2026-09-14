@@ -5,6 +5,9 @@ use crate::item::Item;
 use crate::knot::{Ctx, Knot, KnotDescriptor};
 use crate::schema::{FieldOption, KnotSchema, ParamField};
 use crate::templ;
+use std::io::Read;
+
+const MAX_BODY_SIZE: u64 = 5 * 1024 * 1024;
 
 pub const DESCRIPTOR: KnotDescriptor = KnotDescriptor {
     kind: "http.request",
@@ -113,10 +116,15 @@ impl Knot for HttpRequest {
                     )
                 })
                 .collect();
-            let body_text = response
+            let mut body_text = String::new();
+            response
                 .into_body()
-                .read_to_string()
-                .map_err(|e| Error::Knot(e.to_string()))?;
+                .into_reader()
+                .take(MAX_BODY_SIZE)
+                .read_to_string(&mut body_text)
+                .map_err(|e| {
+                    Error::Knot(format!("Failed to read body or body too large: {}", e))
+                })?;
             let parsed_body =
                 serde_json::from_str::<Value>(&body_text).unwrap_or(Value::String(body_text));
 

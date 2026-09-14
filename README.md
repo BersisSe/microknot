@@ -4,24 +4,21 @@
 
 <h1 align="center">Microknot</h1>
 
-
-
-
-A local-first workflow engine written in Rust. Workflows are defined as JSON, executed by lightweight Rust nodes, and orchestrated through a minimal REST API.
+A local-first workflow engine written in Rust. Workflows are defined as JSON, executed by lightweight Rust nodes ("knots"), and orchestrated through a minimal REST API with an embedded Vue dashboard.
 
 ## Features
 
 - Local-first: everything runs on your machine, no cloud dependencies
-- JSON workflow definitions with validation
-- REST API for workflow and execution management
-- Synchronous and queued execution modes
-- Retries with exponential backoff and timeout handling
-- Restart-safe: queued executions resume after a crash
-- Minimal runtime footprint
+- JSON workflow definitions with validation (cycle detection, connection and registry checks)
+- REST API for workflow CRUD and synchronous execution
+- Hand-rolled graph editor UI (Vue 3 + TypeScript), embedded into the server binary
+- Minimal runtime footprint (SQLite with WAL mode for storage)
 
 ## Workflows
 
-A workflow is a set of nodes connected by edges. Each node receives a list of JSON items, processes them, and passes results downstream.
+A workflow is a set of knots connected by edges. Each knot receives a list of JSON items, processes them, and passes results downstream. A run starts from a seed item (the request body of the run call, or an empty object).
+
+> **Note:** JSON field names are camelCase (`fromOutput` / `toInput`). Using snake_case will silently default port indices to `0`.
 
 ```json
 {
@@ -29,8 +26,8 @@ A workflow is a set of nodes connected by edges. Each node receives a list of JS
   "knots": [
     {
       "id": "n1",
-      "type": "trigger.schedule",
-      "params": { "cron": "*/5 * * * *" }
+      "type": "trigger.webhook",
+      "params": {}
     },
     {
       "id": "n2",
@@ -39,56 +36,55 @@ A workflow is a set of nodes connected by edges. Each node receives a list of JS
         "method": "GET",
         "url": "https://api.example.com/status"
       }
+    },
+    {
+      "id": "n3",
+      "type": "notify.log",
+      "params": { "message": "status: {{ $json.status }}" }
     }
   ],
   "connections": [
-    { "from": "n1", "from_output": 0, "to": "n2", "to_input": 0 }
+    { "from": "n1", "fromOutput": 0, "to": "n2", "toInput": 0 },
+    { "from": "n2", "fromOutput": 0, "to": "n3", "toInput": 0 }
   ]
 }
 ```
 
-### Node types
+### Knot types
 
-- `trigger.webhook` — start a workflow via an inbound request
-- `trigger.schedule` — start a workflow on a cron schedule
-- `http.request` — call external APIs
-- `transform.filter` — branch on conditions
-- `transform.set` — modify JSON fields
-- `transform.delay` — pace execution
-- `ai.call` — Make an LLM Request to a OpenAI standart provider.
-- `db.sqlite` — run SQL against a database
-- `file.read`, `file.write` — read and write local files
-- `notify.smtp`, `notify.log` `notify.resend`— notifications
+- `trigger.webhook` — entry point; emits the seed item for the run
+- `trigger.schedule` — stub; cannot be executed yet (no scheduler implemented)
+- `http.request` — call external APIs (templated URL/headers/body)
+- `transform.filter` — branch items on conditions (match / no-match outputs)
+- `transform.set` — set or overwrite JSON fields via dot-paths
+- `transform.delay` — pause execution for a given number of milliseconds
+- `notify.log` — print items to the server log
+- `notify.resend` — send emails via the Resend API
+
+`ai.call` exists in the code but is not yet registered in the knot registry, so it cannot be used in workflows.
+
+Templating: values support `{{ $json.path.to.field }}` (item data) and `{{ $env.VAR }}` (environment variables).
 
 ## Usage
 
 ```
-microknot serve            Start the server, scheduler, and worker
-microknot run <file.json>  Execute a workflow headlessly
-microknot validate <file.json>
-microknot list             List stored workflows
+microknot serve                    Start the API server and dashboard
+microknot serve --addr 127.0.0.1:5050 --db ./microknot.db
+microknot validate <file.json>     Validate a workflow definition
+microknot list                     List stored workflows
 ```
 
-## API
-
-| Method | Path | Description |
-|---|---|---|
-| GET, POST | `/api/workflows` | List or create workflows |
-| GET, PUT, DELETE | `/api/workflows/:id` | Manage a workflow |
-| POST | `/api/workflows/:id/run` | Execute a workflow synchronously |
-| POST | `/api/hooks/:workflow_id/:name` | Webhook trigger entry point |
-| GET | `/api/executions` | List executions |
-| GET | `/api/executions/:id` | Execution details and per-node telemetry |
-| GET | `/api/knots` | Available node types |
+Workflows are executed manually via `POST /api/workflows/:id/run`. There is no scheduler, queue, or retry mechanism (yet).
 
 ## Development
 
+The frontend is embedded into the binary, so it must be built before the server:
+
 ```
-cargo build
+cd frontend && pnpm install && pnpm build   # produces frontend/dist
+cargo build                                 # embeds frontend/dist via rust-embed
 cargo test
 cargo run -- serve
 ```
 
-## License
-
-AGPLv3
+For frontend development, `vite.config.ts` proxies `/api` to `localhost:5050`, so run `cargo run -- serve` and `pnpm dev` side by side.

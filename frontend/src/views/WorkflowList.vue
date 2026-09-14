@@ -12,19 +12,30 @@ const knots = ref<KnotDescriptor[]>([]);
 const selectedId = ref<string | null>(null);
 const runResult = ref<RunResult | null>(null);
 const errorMessage = ref<string | null>(null);
+const loading = ref(true);
+const running = ref(false);
+const runSeed = ref("");
+
+// Each action owns its error handling: clear first, set on failure. This
+// keeps a stale message from one action from lingering under another.
+function fail(e: unknown) {
+  errorMessage.value = e instanceof ApiError ? e.message : String(e);
+}
 
 const selected = computed(() => workflows.value.find((w) => w.id === selectedId.value) ?? null);
 
 async function loadWorkflows() {
+  errorMessage.value = null;
   try {
     const body = await api.listWorkflows();
     workflows.value = body.data;
     if (selectedId.value && !workflows.value.some((w) => w.id === selectedId.value)) {
       selectedId.value = null;
     }
-    errorMessage.value = null;
   } catch (e) {
-    errorMessage.value = e instanceof ApiError ? e.message : String(e);
+    fail(e);
+  } finally {
+    loading.value = false;
   }
 }
 
@@ -33,23 +44,25 @@ async function loadKnots() {
     const body = await api.listKnots();
     knots.value = body.data;
   } catch (e) {
-    errorMessage.value = e instanceof ApiError ? e.message : String(e);
+    fail(e);
   }
 }
 
 async function selectWorkflow(id: string) {
   selectedId.value = id;
   runResult.value = null;
+  errorMessage.value = null;
   try {
     const body = await api.getWorkflow(id);
     const idx = workflows.value.findIndex((w) => w.id === id);
     if (idx >= 0) workflows.value[idx] = body.data;
   } catch (e) {
-    errorMessage.value = e instanceof ApiError ? e.message : String(e);
+    fail(e);
   }
 }
 
 async function createWorkflow() {
+  errorMessage.value = null;
   try {
     const body = await api.createWorkflow({
       name: `New workflow ${new Date().toISOString().slice(0, 19).replace("T", " ")}`,
@@ -63,29 +76,44 @@ async function createWorkflow() {
     showToast("Workflow created");
     router.push({ name: "editor", params: { id: body.data.id } });
   } catch (e) {
-    errorMessage.value = e instanceof ApiError ? e.message : String(e);
+    fail(e);
   }
 }
 
 async function runWorkflow(id: string) {
+  errorMessage.value = null;
+  runResult.value = null;
+  running.value = true;
   try {
-    const body = await api.runWorkflow(id);
+    let seed: Record<string, unknown> | undefined;
+    const text = runSeed.value.trim();
+    if (text) {
+      try {
+        seed = JSON.parse(text);
+      } catch {
+        errorMessage.value = "Seed input is not valid JSON — running with empty seed.";
+      }
+    }
+    const body = await api.runWorkflow(id, seed);
     runResult.value = body.data;
     showToast(`Run finished: ${body.data.status}`);
   } catch (e) {
-    errorMessage.value = e instanceof ApiError ? e.message : String(e);
+    fail(e);
+  } finally {
+    running.value = false;
   }
 }
 
 async function deleteWorkflow(id: string, name: string) {
   if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  errorMessage.value = null;
   try {
     await api.deleteWorkflow(id);
     showToast("Workflow deleted");
     if (selectedId.value === id) selectedId.value = null;
     await loadWorkflows();
   } catch (e) {
-    errorMessage.value = e instanceof ApiError ? e.message : String(e);
+    fail(e);
   }
 }
 
@@ -119,7 +147,8 @@ onMounted(() => {
         <span class="muted">{{ workflows.length }} workflow{{ workflows.length === 1 ? "" : "s" }}</span>
       </div>
       <div class="workflow-list">
-        <div v-if="workflows.length === 0" class="empty">No workflows yet. Create one to get started.</div>
+        <div v-if="loading" class="empty">Loading workflows…</div>
+        <div v-else-if="workflows.length === 0" class="empty">No workflows yet. Create one to get started.</div>
         <div
           v-for="wf in workflows"
           :key="wf.id"
@@ -150,10 +179,41 @@ onMounted(() => {
         <div v-if="!selected" class="empty">Select a workflow to inspect it.</div>
         <template v-else>
           <h3>{{ selected.name || "(untitled)" }}</h3>
-          <pre>{{ JSON.stringify(selected, null, 2) }}</pre>
-          <div v-if="runResult" class="run-results">
-            Run status: {{ runResult.status }} · {{ runResult.steps?.length ?? 0 }} steps
+          <div class="run-box">
+            <div class="run-box-row">
+              <input
+                v-model="runSeed"
+                class="run-seed"
+                placeholder='optional seed item JSON, e.g. {"name": "ada"}'
+                spellcheck="false"
+              />
+              <button class="btn btn-small" :disabled="running" @click="runWorkflow(selected.id)">
+                {{ running ? "Running…" : "Run" }}
+              </button>
+            </div>
+            <div v-if="runResult" class="run-results">
+              <div class="run-summary">
+                Run status: <strong>{{ runResult.status }}</strong> ·
+                {{ runResult.steps.length }} step{{ runResult.steps.length === 1 ? "" : "s" }}
+              </div>
+              <table v-if="runResult.steps.length" class="run-steps">
+                <thead>
+                  <tr><th>knot</th><th>kind</th><th>status</th><th>items</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(s, i) in runResult.steps" :key="i">
+                    <td class="mono">{{ s.knot }}</td>
+                    <td class="mono">{{ s.kind }}</td>
+                    <td>
+                      <span class="badge" :class="s.status === 'ok' ? 'on' : 'off'">{{ s.status }}</span>
+                    </td>
+                    <td>{{ s.items }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
+          <pre>{{ JSON.stringify(selected, null, 2) }}</pre>
         </template>
       </div>
     </section>

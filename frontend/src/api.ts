@@ -44,11 +44,14 @@ export const api = {
     return request(`/workflows/${id}`, { method: "DELETE" });
   },
 
-  runWorkflow(id: string): Promise<{ data: RunResult }> {
+  runWorkflow(
+    id: string,
+    seed?: Record<string, unknown>,
+  ): Promise<{ data: RunResult }> {
     return request(`/workflows/${id}/run`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: "{}",
+      body: JSON.stringify(seed ?? {}),
     });
   },
 

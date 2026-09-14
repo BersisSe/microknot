@@ -65,12 +65,22 @@ pub fn render_string(s: &str, item: &Item) -> String {
 
 pub fn resolve(expr: &str, item: &Item) -> Option<Value> {
     let expr = expr.trim();
-    let rest = expr.strip_prefix("$json")?;
-    let path = rest.trim_start_matches('.');
-    if path.is_empty() {
-        return Some(item.json.clone());
+    if let Some(rest) = expr.strip_prefix("$json") {
+        let path = rest.trim_start_matches('.');
+        if path.is_empty() {
+            return Some(item.json.clone());
+        }
+        return resolve_path(&item.json, path.split('.'));
     }
-    resolve_path(&item.json, path.split('.'))
+    
+    // Add simple $env support
+    if let Some(rest) = expr.strip_prefix("$env.") {
+        let env_var = rest.trim();
+        return std::env::var(env_var)
+            .ok()
+            .map(|val| Value::String(val));
+    }
+    None
 }
 
 pub fn resolve_path<'a>(json: &Value, parts: impl Iterator<Item = &'a str>) -> Option<Value> {

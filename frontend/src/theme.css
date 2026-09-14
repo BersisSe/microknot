@@ -177,6 +177,26 @@ a { color: inherit; }
   padding: 14px; overflow: auto; font-family: var(--mono); font-size: 12px; line-height: 1.6; color: var(--text-muted);
 }
 .run-results { margin-top: 16px; }
+.run-box { margin-top: 14px; }
+.run-box-row { display: flex; gap: 8px; }
+.run-seed {
+  flex: 1;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 6px 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.run-seed:focus { outline: none; border-color: var(--accent); }
+.run-summary { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+.run-steps { width: 100%; border-collapse: collapse; font-size: 12px; }
+.run-steps th, .run-steps td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+.run-steps th { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); }
+.run-steps .mono { font-family: var(--mono); }
+.run-summary strong { color: var(--text); }
+.mono { font-family: var(--mono); }
 .run-results h3 {
   margin: 0 0 10px; font-family: var(--mono); font-size: 11px; font-weight: 600;
   letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted);
@@ -358,3 +378,51 @@ svg.wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-eve
   .editor-shell { grid-template-columns: 1fr; height: auto; }
   .palette, .inspector { max-height: 220px; }
 }
+
+/* ---- Vue Flow integration ---- */
+
+.vue-flow { background: transparent; }
+
+.vue-flow__node { cursor: grab; }
+.vue-flow__node.dragging { cursor: grabbing; }
+
+/* The .knot styles were written for absolutely-positioned nodes in the old
+   hand-rolled layer; inside Vue Flow the wrapper handles positioning. */
+.vue-flow__node .knot { position: relative; }
+
+.vue-flow__handle {
+  width: 11px; height: 11px;
+  background: var(--bg-sunken);
+  border: 2px solid var(--border-strong);
+  border-radius: 50%;
+  cursor: crosshair;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.vue-flow__handle:hover,
+.vue-flow__handle.connectionindicator:hover {
+  border-color: var(--accent);
+  background: var(--accent-strong);
+}
+.vue-flow__handle-left { left: -6px; }
+.vue-flow__handle-right { right: -6px; }
+
+.vue-flow__edge path { stroke-width: 1.6; }
+.vue-flow__edge.selected path,
+.vue-flow__edge:focus path { stroke: var(--accent) !important; stroke-width: 2.2 !important; }
+
+.vue-flow__controls {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--elev-1);
+  overflow: hidden;
+}
+.vue-flow__controls-button {
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  fill: var(--text-muted);
+}
+.vue-flow__controls-button:hover { background: var(--bg-hover); }
+
+.vue-flow__edge-textbg { fill: var(--bg-panel); }
+

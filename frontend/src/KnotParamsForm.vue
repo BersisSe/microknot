@@ -6,11 +6,7 @@ import type { ParamField, ListRowField } from "./knotSchema";
 const props = defineProps<{ knot: Knot; schema: ParamField[] }>();
 const emit = defineEmits<{ change: [] }>();
 
-// schema comes from the server (KnotDescriptor.schema) and drives the form.
 const schema = props.schema;
-
-// params is a reactive object owned by the graph's knots array, so mutating it
-// directly is reactive. We only signal the parent to mark the workflow dirty.
 const params = props.knot.params as Record<string, unknown>;
 
 function commit() {
@@ -18,7 +14,6 @@ function commit() {
 }
 
 // ---- scalar helpers ----
-
 function setScalar(key: string, value: unknown) {
   if (typeof value === "string" && value === "") delete params[key];
   else params[key] = value;
@@ -30,8 +25,12 @@ function onText(key: string, e: Event) {
 }
 
 function onNumber(key: string, e: Event) {
-  const n = Number((e.target as HTMLInputElement).value);
-  params[key] = Number.isNaN(n) ? 0 : n;
+  const raw = (e.target as HTMLInputElement).value;
+  // Clearing the field must remove the param, not store 0
+  // (Number("") === 0, which silently corrupted params).
+  const n = Number(raw);
+  if (raw.trim() === "" || Number.isNaN(n)) delete params[key];
+  else params[key] = n;
   commit();
 }
 

@@ -3,6 +3,10 @@ name = "microknot-server"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "microknot"
+path = "src/main.rs"
+
 [dependencies]
 microknot-core = { path = "../microknot-core" }
 clap = { version = "4", features = ["derive", "env"] }
